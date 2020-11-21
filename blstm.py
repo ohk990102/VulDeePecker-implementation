@@ -43,4 +43,5 @@ class BLSTM(nn.Module):
 
 model = BLSTM(input_size, hidden_size, num_layers, num_classes).to(device)
 
+loss = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adamax(model.parameters(), lr=learning_rate)
