@@ -1,0 +1,3 @@
+[submodule "VulDeePecker"]
+	path = VulDeePecker
+	url = https://github.com/CGCL-codes/VulDeePecker.git
