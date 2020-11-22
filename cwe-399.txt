@@ -1,0 +1,2 @@
+free, delete, new, malloc, realloc, calloc, _alloca, strdup, asprintf,
+vsprintf, vasprintf, sprintf, snprintf, _snprintf, _snwprintf, vsnprintf
