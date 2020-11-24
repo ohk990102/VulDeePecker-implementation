@@ -1,5 +1,7 @@
 from typing import List, Optional, Tuple
+import numpy
 import torch
+from torch.autograd import backward
 import torch.utils.data as data
 import string
 from gensim.models import Word2Vec
@@ -92,15 +94,21 @@ def map_identifier(tokens: List[str], keywords: Tuple[str]):
                     variable_i += 1
                 tokens[i] = variable[tokens[i]]
 
-def backward_slice(gadget: List[str]):
-    pass
+def is_backward_slice(gadget: List[str]):
+    # TODO: implement checks to backward/forward API calls (missing in paper)
+    return True
 
 class CGDDataset(data.Dataset):
-    def __init__(self, file: str, vector_length: int, keywords: Tuple[str]):
+    def __init__(self, file: str, vector_length: int):
         super(CGDDataset, self).__init__()
         self.data = []
         self.token = []
         self.vector_length = vector_length
+        self.keywords = cpp_keywords + extra_keywords + cwe_119_keywords + cwe_399_keywords
+        self._process_file(file)
+        self.model = Word2Vec(self.token, min_count=1, size=self.vector_length, sg=1)
+
+    def _process_file(self, file):
         with open(file, "r", encoding='utf-8') as f:
             info = ""
             code = ""
@@ -112,9 +120,8 @@ class CGDDataset(data.Dataset):
 
                 if "---------------------------------" in line:
                     token = list(Lexer(code))
-                    map_identifier(token, keywords)
-                    self.data.append((info, code, value))
-                    self.token.append(token)
+                    map_identifier(token, self.keywords)
+                    self._add_gadget(info, code, value, token)
                     info = ""
                     code = ""
                     value = 0
@@ -128,21 +135,35 @@ class CGDDataset(data.Dataset):
                     code += line
             if info != "":
                 token = list(Lexer(code))
-                map_identifier(token, keywords)
-                self.data.append((info, code, value))
-                self.token.append(token)
-        
-        self.model = Word2Vec(self.token, min_count=1, size=self.vector_length, sg=1)
+                map_identifier(token, self.keywords)
+                self._add_gadget(info, code, value, token)
+
+    def _add_gadget(self, info, code, value, token):
+        self.data.append((info, code, value))
+        self.token.append(token)
     
     def __getitem__(self, index):
-        return self.token[index], self.data[index][2]
+        if self.model is None:
+            raise Exception("Word2vec model not trained. ")
+
+        gadget, label = self.token[index], self.data[index][2]
+
+        # https://github.com/johnb110/VDPython/blob/8e63d12c368b2845c93a7345d055aa3b0b385891/vectorize_gadget.py#L117-L124
+        vectors =  numpy.zeros(shape=(50, self.vector_length))
+        if is_backward_slice(gadget):
+            for i in range(min(len(gadget), 50)):
+                vectors[50 - 1 - i] = self.model.wv[gadget[len(gadget) - 1 - i]]
+        else:
+            for i in range(min(len(gadget), 50)):
+                vectors[i] = self.model.wv[gadget[i]]
+        return torch.from_numpy(vectors), label
 
     def __len__(self):
         return len(self.data)
 
 if __name__ == "__main__":
-    dataset = CGDDataset('./VulDeePecker/CWE-119/CGD/cwe119_cgd.txt', 50, cpp_keywords + extra_keywords + cwe_119_keywords)
+    dataset = CGDDataset('./VulDeePecker/CWE-119/CGD/cwe119_cgd.txt', 100)
 
     for i in range(len(dataset.data)):
-        print(dataset.token[i], dataset.data[i][1])
+        print(dataset.token[i], dataset.data[i][1], dataset[i])
         input()
