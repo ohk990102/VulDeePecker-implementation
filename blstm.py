@@ -4,8 +4,6 @@ https://github.com/yunjey/pytorch-tutorial/blob/master/tutorials/02-intermediate
 
 import torch
 import torch.nn as nn
-import torchvision
-import torchvision.transforms as transforms
 import torch.nn.functional as F
 
 # Check if cuda is available
@@ -34,10 +32,10 @@ class BLSTM(nn.Module):
     def forward(self, x):
         h0 = torch.zeros(self.num_layers*2, x.size(0), self.hidden_size).to(device)
         c0 = torch.zeros(self.num_layers*2, x.size(0), self.hidden_size).to(device)
-
-        x = self.dropout(x)
+        
         out, _ = self.lstm(x, (h0, c0))
 
+        out = self.dropout(out)
         out = self.fc(out[:, -1, :])
         return F.softmax(out)
 
