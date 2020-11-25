@@ -18,7 +18,7 @@ hidden_size = 300
 num_layers = 2
 num_classes = 1
 drouput = 0.5
-batch_size = 100
+batch_size = 64
 num_epochs = 4
 learning_rate = 1.0
 
@@ -49,15 +49,21 @@ optimizer = torch.optim.Adamax(model.parameters(), lr=learning_rate)
 print('[*] Loading dataset...')
 cgd_dataset = CGDDataset('./VulDeePecker/CWE-119/CGD/cwe119_cgd.txt', 100)
 print('[+] Loading dataset complete')
-data_loader = torch.utils.data.DataLoader(cgd_dataset, batch_size=1, shuffle=True)
 
-total_step = len(data_loader)
+total_step = len(cgd_dataset)
+train_size = int(total_step * 0.9)
+test_size = total_step - train_size
+train_dataset, test_dataset = torch.utils.data.random_split(cgd_dataset, [train_size, test_size])
+
+train_dataloader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True)
+test_dataloader = torch.utils.data.DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=False)
 
 print('[*] Training model...')
 for epoch in range(num_epochs):
-    for i, (data, label) in enumerate(data_loader):
+    for i, (data, label) in enumerate(train_dataloader):
+        model.train()
         label = torch.from_numpy(numpy.array(label)).cuda(device)
-        output = model(data.cuda(device))
+        output = model.forward(data.cuda(device))
         loss = criterion(output, label)
 
         optimizer.zero_grad()
@@ -65,7 +71,17 @@ for epoch in range(num_epochs):
         optimizer.step()
 
         if (i+1) % 100 == 0:
-            print ('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}' 
-                   .format(epoch+1, num_epochs, i+1, total_step, loss.item()))
+            model.eval()
+            with torch.no_grad():
+                accuracy = 0
+                for data, labels in test_dataloader:
+                    data = data.cuda(device)
+                    labels = torch.from_numpy(numpy.array(labels)).cuda(device)
+                    output = model.forward(data)
+                    _, predicted = torch.max(output.data, 1)
+                    accuracy += (predicted == labels).sum().item()
+
+            print ('Epoch [{}/{}], Step [{}/{}], Training Loss: {:.4f}, Test Accuracy: {:.4f}' 
+                   .format(epoch+1, num_epochs, i+1, len(train_dataloader), loss.item(), accuracy / test_size))
 
 print('[+] Training model complete')
