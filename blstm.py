@@ -47,7 +47,12 @@ criterion  = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adamax(model.parameters(), lr=learning_rate)
 
 print('[*] Loading dataset...')
-cgd_dataset = CGDDataset('./VulDeePecker/CWE-119/CGD/cwe119_cgd.txt', 100)
+cgd_dataset = load_cache('cgd_dataset')
+if cgd_dataset is None:
+    print('[*] Cache missed, generating manually...')
+    cgd_dataset = CGDDataset('./VulDeePecker/CWE-119/CGD/cwe119_cgd.txt', 100)
+    store_cache('cgd_dataset', ['cgd.py'], cgd_dataset)
+
 print('[+] Loading dataset complete')
 
 total_step = len(cgd_dataset)
