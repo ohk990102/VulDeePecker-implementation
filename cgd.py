@@ -156,7 +156,7 @@ class CGDDataset(data.Dataset):
         else:
             for i in range(min(len(gadget), 50)):
                 vectors[i] = self.model.wv[gadget[i]]
-        return torch.from_numpy(vectors), label
+        return torch.from_numpy(vectors).float(), label
 
     def __len__(self):
         return len(self.data)
