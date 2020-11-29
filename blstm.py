@@ -69,8 +69,9 @@ print('[*] Training model...')
 for epoch in range(num_epochs):
     for i, (data, label) in enumerate(train_dataloader):
         model.train()
-        label = torch.from_numpy(numpy.array(label)).cuda(device)
-        output = model.forward(data.cuda(device))
+        label = torch.tensor(label).unsqueeze(1).to(device)
+        output = model.forward(data.to(device)).squeeze(1)
+        print(output, label)
         loss = criterion(output, label)
 
         optimizer.zero_grad()
@@ -81,12 +82,13 @@ for epoch in range(num_epochs):
             model.eval()
             with torch.no_grad():
                 accuracy = 0
-                for data, labels in test_dataloader:
-                    data = data.cuda(device)
-                    labels = torch.from_numpy(numpy.array(labels)).cuda(device)
+                for data, label in test_dataloader:
+                    data = data.to(device).unsqueeze(1)
+                    label = torch.tensor(label).to(device)
                     output = model.forward(data)
-                    _, predicted = torch.max(output.data, 1)
-                    accuracy += (predicted == labels).sum().item()
+                    # print(output, label)
+                    # input()
+                    accuracy += (output == label).sum().item()
 
             print ('Epoch [{}/{}], Step [{}/{}], Training Loss: {:.4f}, Test Accuracy: {:.4f}' 
                    .format(epoch+1, num_epochs, i+1, len(train_dataloader), loss.item(), accuracy / test_size))
