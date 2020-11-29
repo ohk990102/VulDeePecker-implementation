@@ -18,11 +18,11 @@ sequence_length = 50    # Sequence length -> Paper sets it to
 input_size = 100        # ?
 hidden_size = 300
 num_layers = 2
-num_classes = 1
+num_classes = 2
 drouput = 0.5
 batch_size = 64
 num_epochs = 4
-learning_rate = 1.0
+learning_rate = 0.002
 
 class BLSTM(nn.Module):
     def __init__(self, input_size, hidden_size, num_layers, num_classes):
@@ -30,7 +30,7 @@ class BLSTM(nn.Module):
         self.hidden_size = hidden_size
         self.num_layers = num_layers
         self.lstm = nn.LSTM(input_size, hidden_size, num_layers, batch_first=True, bidirectional=True)
-        self.fc = nn.Linear(hidden_size*2, hidden_size*2)
+        self.fc = nn.Linear(hidden_size*2, num_classes)
         self.dropout = nn.Dropout(drouput)
     
     def forward(self, x):
@@ -69,9 +69,8 @@ print('[*] Training model...')
 for epoch in range(num_epochs):
     for i, (data, label) in enumerate(train_dataloader):
         model.train()
-        label = torch.tensor(label).unsqueeze(1).to(device)
-        output = model.forward(data.to(device)).squeeze(1)
-        print(output, label)
+        label = torch.tensor(label).long().to(device)
+        output = model.forward(data.to(device))
         loss = criterion(output, label)
 
         optimizer.zero_grad()
@@ -83,12 +82,9 @@ for epoch in range(num_epochs):
             with torch.no_grad():
                 accuracy = 0
                 for data, label in test_dataloader:
-                    data = data.to(device).unsqueeze(1)
-                    label = torch.tensor(label).to(device)
-                    output = model.forward(data)
-                    # print(output, label)
-                    # input()
-                    accuracy += (output == label).sum().item()
+                    label = torch.tensor(label).long().to(device)
+                    output = model.forward(data.to(device))
+                    accuracy += (output.argmax() == label).sum().item()
 
             print ('Epoch [{}/{}], Step [{}/{}], Training Loss: {:.4f}, Test Accuracy: {:.4f}' 
                    .format(epoch+1, num_epochs, i+1, len(train_dataloader), loss.item(), accuracy / test_size))
