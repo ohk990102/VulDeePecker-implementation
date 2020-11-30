@@ -32,6 +32,7 @@ class BLSTM(nn.Module):
         self.lstm = nn.LSTM(input_size, hidden_size, num_layers, batch_first=True, bidirectional=True)
         self.fc = nn.Linear(hidden_size*2, num_classes)
         self.dropout = nn.Dropout(drouput)
+        self.softmax = nn.Softmax(dim=1)
     
     def forward(self, x):
         h0 = torch.zeros(self.num_layers*2, x.size(0), self.hidden_size).to(device)
@@ -39,14 +40,10 @@ class BLSTM(nn.Module):
         
         out, _ = self.lstm(x, (h0, c0))
 
-        out = self.dropout(out)
-        out = self.fc(out[:, -1, :])
-        return F.softmax(out)
+        out = self.dropout(out[:, -1, :])
+        out = self.fc(out)
 
-model = BLSTM(input_size, hidden_size, num_layers, num_classes).to(device)
-
-criterion  = nn.CrossEntropyLoss()
-optimizer = torch.optim.Adamax(model.parameters(), lr=learning_rate)
+        return self.softmax(out)
 
 print('[*] Loading dataset...')
 cgd_dataset = load_cache('cgd_dataset')
@@ -62,15 +59,27 @@ train_size = int(total_step * 0.9)
 test_size = total_step - train_size
 train_dataset, test_dataset = torch.utils.data.random_split(cgd_dataset, [train_size, test_size])
 
+weight = [0, 0]
+for data, label in cgd_dataset:
+    weight[label] += 1
+
+weight[0], weight[1] = weight[1], weight[0]
+weight = torch.tensor(list(map(lambda v: v / total_step, weight))).to(device)
+
 train_dataloader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True)
 test_dataloader = torch.utils.data.DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=False)
+
+model = BLSTM(input_size, hidden_size, num_layers, num_classes).to(device)
+
+criterion  = nn.CrossEntropyLoss(weight=weight)
+optimizer = torch.optim.Adamax(model.parameters(), lr=learning_rate)
 
 print('[*] Training model...')
 for epoch in range(num_epochs):
     for i, (data, label) in enumerate(train_dataloader):
         model.train()
         label = torch.tensor(label).long().to(device)
-        output = model.forward(data.to(device))
+        output = model(data.to(device))
         loss = criterion(output, label)
 
         optimizer.zero_grad()
@@ -83,8 +92,9 @@ for epoch in range(num_epochs):
                 accuracy = 0
                 for data, label in test_dataloader:
                     label = torch.tensor(label).long().to(device)
-                    output = model.forward(data.to(device))
-                    accuracy += (output.argmax() == label).sum().item()
+                    output = model(data.to(device))
+                    _, predicted = torch.max(output.data, 1)
+                    accuracy += (predicted == label).sum().item()
 
             print ('Epoch [{}/{}], Step [{}/{}], Training Loss: {:.4f}, Test Accuracy: {:.4f}' 
                    .format(epoch+1, num_epochs, i+1, len(train_dataloader), loss.item(), accuracy / test_size))
