@@ -74,13 +74,21 @@ class Lexer(object):
         else:
             return self._get()
 
+def is_token_in_keywords(token: str, keywords: Tuple[str]) -> bool:
+    for keyword in keywords:
+        if keyword.endswith('*') and token.startswith(keyword[:-1]):
+            return True
+        elif token == keyword:
+            return True
+    return False
+
 def map_identifier(tokens: List[str], keywords: Tuple[str]):
     variable = {}
     variable_i = 1
     function = {}
     function_i = 1
     for i in range(len(tokens)):
-        if re.match('^[a-zA-Z_][a-zA-Z0-9_]*$', tokens[i]) is not None and tokens[i] not in keywords:
+        if re.match('^[a-zA-Z_][a-zA-Z0-9_]*$', tokens[i]) is not None and is_token_in_keywords(tokens[i], keywords):
             if i+1 < len(tokens) and tokens[i+1] == '(':
                 # Functions
                 if tokens[i] not in function:
@@ -156,13 +164,15 @@ class CGDDataset(data.Dataset):
         else:
             for i in range(min(len(gadget), 50)):
                 vectors[i] = self.model.wv[gadget[i]]
-        return torch.from_numpy(vectors).float(), label
+        return torch.from_numpy(vectors).float(), torch.tensor(label).long()
 
     def __len__(self):
         return len(self.data)
 
 if __name__ == "__main__":
     dataset = CGDDataset('./VulDeePecker/CWE-119/CGD/cwe119_cgd.txt', 100)
+
+    dataset.model.wv.save_word2vec_format("./cgd119.txt")
 
     for i in range(len(dataset.data)):
         print(dataset.token[i], dataset.data[i][1], dataset[i])

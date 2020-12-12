@@ -1,0 +1,21 @@
+{
+    "hyperparameter": {
+        "sequence_length" : 50,
+        "input_size" : 100,
+        "hidden_size" : 300,
+        "num_layers" : 2,
+        "num_classes" : 2,
+        "drouput" : 0.5,
+        "batch_size" : 64,
+        "num_epochs" : 20,
+        "learning_rate" : 0.002
+    },
+    "dataset": {
+        "cwe-119": {
+            "cgd_filepath": "./VulDeePecker/CWE-119/CGD/cwe119_cgd.txt"
+        },
+        "cwe-399": {
+            "cgd_filepath": "./VulDeePecker/CWE-399/CGD/cwe399_cgd.txt"
+        }
+    }
+}
