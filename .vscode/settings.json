@@ -1,0 +1,14 @@
+{
+    "python.pythonPath": "C:\\Users\\ohk990102\\.pyenv\\pyenv-win\\versions\\3.8.0-amd64\\python.exe",
+    "editor.formatOnSave": true,
+    "python.sortImports.path": "isort",
+    "python.sortImports.args": [
+        "--profile=black",
+    ],
+    "python.formatting.provider": "black",
+    "[python]":{
+        "editor.codeActionsOnSave":{
+            "source.organizeImports": true
+        }
+    }
+}
