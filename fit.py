@@ -184,7 +184,7 @@ class Fitter(object):
             correct += (pred == label).sum()
 
             self.optimizer.step()
-            matrix = confusion_matrix(label.cpu(), pred.cpu(), labels=[0, 1])
+            matrix = confusion_matrix(label.cpu(), pred.cpu(), labels=[1, 0])
             total_score.update(matrix)
 
             if self.config.verbose:
