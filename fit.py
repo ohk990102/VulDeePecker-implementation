@@ -154,6 +154,8 @@ class Fitter(object):
                 matrix = confusion_matrix(label.cpu(), pred.cpu(), labels=[1, 0])
                 total_score.update(matrix)
                 summary_loss.update(loss.detach().item(), batch_size)
+                del data
+                del label
 
         return summary_loss, total_score
 
@@ -196,6 +198,8 @@ class Fitter(object):
                         + f"time: {(time.time() - t):.5f}",
                         end="\r",
                     )
+            del data
+            del label
 
         return summary_loss, total_score
 
