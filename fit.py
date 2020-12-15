@@ -2,6 +2,7 @@ import time
 
 import numpy as np
 import torch
+from blstm import BLSTM
 from config import DefaultTrainConfig
 from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import KFold
@@ -54,7 +55,7 @@ class F1Meter(object):
 
 
 class Fitter(object):
-    def __init__(self, model, device, config: DefaultTrainConfig):
+    def __init__(self, model: BLSTM, device: torch.device, config: DefaultTrainConfig):
         self.config = config
         self.epoch = 0
 
