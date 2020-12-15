@@ -196,7 +196,7 @@ def map_identifier(tokens: List[str], keywords: Tuple[str]):
     for i in range(len(tokens)):
         if re.match(
             "^[a-zA-Z_][a-zA-Z0-9_]*$", tokens[i]
-        ) is not None and is_token_in_keywords(tokens[i], keywords):
+        ) is not None and not is_token_in_keywords(tokens[i], keywords):
             if i + 1 < len(tokens) and tokens[i + 1] == "(":
                 # Functions
                 if tokens[i] not in function:
