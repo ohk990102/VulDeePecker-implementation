@@ -9,7 +9,7 @@ class DefaultTrainConfig(object):
     num_epochs = 100
     learning_rate = 0.01
     k_fold = 10
-    test_size = 0.1
+    test_size = 0.2
 
     verbose = True
     verbose_step = 100
