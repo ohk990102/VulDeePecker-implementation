@@ -74,6 +74,27 @@ class Fitter(object):
         train_dataset, test_dataset = torch.utils.data.random_split(
             dataset, [train_size, test_size]
         )
+        self.criterion = torch.nn.CrossEntropyLoss(
+            weight=calc_weight(dataset).to(self.device)
+        )
+
+        epochs = self.config.num_epochs
+        train_loader = torch.utils.data.DataLoader(
+            train_dataset, batch_size=self.config.batch_size, shuffle=False
+        )
+        test_loader = torch.utils.data.DataLoader(
+            test_dataset, batch_size=self.config.batch_size, shuffle=False
+        )
+        for epoch in range(epochs):
+            train_summary_loss, train_total_score = self.train_one_epoch(train_loader)
+            test_summary_loss, test_total_score = self.validation(test_loader)
+
+            print(
+                f"Epoch {epoch+1}, Train F1: {train_total_score.f1:.5f}, Test F1: {test_total_score.f1:.5f}, "
+                + f"Train Acc: {train_total_score.precision:.5f}, Test Acc: {test_total_score.precision:.5f}, "
+                + f"Train Recall: {train_total_score.recall:.5f}, Test Recall: {test_total_score.recall:.5f}, "
+                + f"Train Loss: {train_summary_loss.avg:.5f}, Test Loss: {test_summary_loss.avg:.5f}"
+            )
 
     def cross_validation(self, dataset):
         train_size = int((1.0 - self.config.test_size) * len(dataset))
@@ -92,6 +113,7 @@ class Fitter(object):
         total_result = []
 
         for fold, (train_index, test_index) in enumerate(kfold.split(dataset)):
+            print(f"[*] Fold: {fold+1}")
             fold_result = []
             train_index, test_index = np.array(train_index), np.array(test_index)
             train_fold = torch.utils.data.dataset.Subset(dataset, train_index)

@@ -51,16 +51,19 @@ if __name__ == "__main__":
     )
     subparser.required = True
 
-    train_group = subparser.add_parser("cv", help="Run cross validation. ")
+    cv_group = subparser.add_parser("cv", help="Run cross validation. ")
+    cv_group.add_argument("category", choices=list(setting["dataset"].keys()))
+    cv_group.add_argument("-l", "--num-layers", nargs="?", type=int)
+    cv_group.add_argument("-d", "--dropout", nargs="?", type=float)
+    cv_group.add_argument("-b", "--batch-size", nargs="?", type=int)
+    cv_group.add_argument("-e", "--num-epochs", nargs="?", type=int)
+    cv_group.add_argument("-lr", "--learning-rate", nargs="?", type=float)
+    cv_group.add_argument("-k", "--k-fold", nargs="?", type=int)
+    cv_group.add_argument("-t", "--test-size", nargs="?", type=float)
+    cv_group.add_argument("-o", "--output", nargs="?", type=argparse.FileType("w"))
+
+    train_group = subparser.add_parser("train", help="Run training. ")
     train_group.add_argument("category", choices=list(setting["dataset"].keys()))
-    train_group.add_argument("-l", "--num-layers", nargs="?", type=int)
-    train_group.add_argument("-d", "--dropout", nargs="?", type=float)
-    train_group.add_argument("-b", "--batch-size", nargs="?", type=int)
-    train_group.add_argument("-e", "--num-epochs", nargs="?", type=int)
-    train_group.add_argument("-lr", "--learning-rate", nargs="?", type=float)
-    train_group.add_argument("-k", "--k-fold", nargs="?", type=int)
-    train_group.add_argument("-t", "--test-size", nargs="?", type=float)
-    train_group.add_argument("-o", "--output", nargs="?", type=argparse.FileType("w"))
 
     result = parser.parse_args()
     cmd = result.cmd
@@ -127,4 +130,20 @@ if __name__ == "__main__":
                 )
         f.close()
 
-        print("[*] training model complete...")
+        print("[*] cross validation complete...")
+    else:
+        print("[*] loading dataset...")
+        dataset = load_dataset(category)
+        print("[+] loading dataset complete")
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        model = BLSTM(
+            config.input_size,
+            config.hidden_size,
+            config.num_layers,
+            config.num_classes,
+            config.dropout,
+            device,
+        ).to(device)
+        print("[*] training model...")
+        fitter = Fitter(model, device, config)
+        fitter.fit(dataset)
